@@ -1,0 +1,84 @@
+/*######
+## npc_apprentice_mirveda
+######*/
+
+#define QUEST_UNEXPECTED_RESULT	8488
+#define MOB_GHARZUL		15958
+#define MOB_ANGERSHADE	15656
+
+struct MANGOS_DLL_DECL npc_apprentice_mirvedaAI : public ScriptedAI
+{
+	npc_apprentice_mirvedaAI(Creature* c) : ScriptedAI(c), Summons(m_creature) {Reset();}
+
+	uint32 KillCount;
+	uint64 PlayerGUID;
+	bool Summon;
+	SummonList Summons;
+
+	void Reset()
+	{
+		KillCount = 0;
+		PlayerGUID = 0;
+		Summons.DespawnAll();
+		Summon = false;
+	}
+
+	void Aggro(Unit* who){}
+
+	void JustSummoned(Creature *summoned)
+	{
+		summoned->AI()->AttackStart(m_creature);
+		Summons.Summon(summoned);
+	}
+
+	void SummonedCreatureDespawn(Creature* summoned) 
+	{
+		Summons.Despawn(summoned);
+		++KillCount;
+	}
+
+	void JustDied(Unit* killer)
+	{
+		if (PlayerGUID)
+		{
+			Unit* player = Unit::GetUnit((*m_creature), PlayerGUID);
+			if (player)
+				((Player*)player)->FailQuest(QUEST_UNEXPECTED_RESULT);
+		}
+	}
+
+	void UpdateAI(const uint32 diff)
+	{
+		if(KillCount >= 3)
+		{
+			if (PlayerGUID)
+			{
+			Unit* player = Unit::GetUnit((*m_creature), PlayerGUID);
+				((Player*)player)->GroupEventHappens(QUEST_UNEXPECTED_RESULT, m_creature);
+			}
+		}
+
+		if(Summon)
+		{
+			m_creature->SummonCreature(MOB_GHARZUL, 8745, -7134.32, 35.22, 0, TEMPSUMMON_CORPSE_DESPAWN, 4000);
+			m_creature->SummonCreature(MOB_ANGERSHADE, 8745, -7134.32, 35.22, 0, TEMPSUMMON_CORPSE_DESPAWN, 4000);
+			m_creature->SummonCreature(MOB_ANGERSHADE, 8745, -7134.32, 35.22, 0, TEMPSUMMON_CORPSE_DESPAWN, 4000);
+			Summon = false;
+		}
+	}
+};
+
+bool QuestAccept_npc_apprentice_mirveda(Player* player, Creature* creature, Quest const* quest)
+{
+    if (quest->GetQuestId() == QUEST_UNEXPECTED_RESULT)
+    {
+		((npc_apprentice_mirvedaAI*)creature->AI())->Summon = true;
+		((npc_apprentice_mirvedaAI*)creature->AI())->PlayerGUID = player->GetGUID();
+    }
+    return true;
+}
+
+CreatureAI* GetAI_npc_apprentice_mirvedaAI(Creature *_Creature)
+{
+    return new npc_apprentice_mirvedaAI (_Creature);
+}
