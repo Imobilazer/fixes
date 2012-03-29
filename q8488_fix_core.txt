@@ -54,6 +54,7 @@ struct MANGOS_DLL_DECL npc_apprentice_mirvedaAI : public ScriptedAI
 			if (PlayerGUID)
 			{
 			Unit* player = Unit::GetUnit((*m_creature), PlayerGUID);
+			if (player)
 				((Player*)player)->GroupEventHappens(QUEST_UNEXPECTED_RESULT, m_creature);
 			}
 		}
